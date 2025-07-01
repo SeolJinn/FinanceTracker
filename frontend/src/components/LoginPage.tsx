@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Wallet, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string>('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const navigate = useNavigate()
+
+  // Check if user is already authenticated on component mount
+  useEffect(() => {
+    if (authService.isTokenValid()) {
+      navigate('/dashboard')
+    }
+  }, [])
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {

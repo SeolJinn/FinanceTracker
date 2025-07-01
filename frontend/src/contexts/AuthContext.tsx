@@ -23,14 +23,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = authService.getToken()
-    const savedUser = authService.getUser()
-    
-    if (token && savedUser) {
-      setUser(savedUser)
+    const initAuth = async () => {
+      if (authService.isTokenValid()) {
+        const savedUser = authService.getUser()
+        if (savedUser) {
+          setUser(savedUser)
+        }
+      } else {
+        // Clear expired token data
+        authService.logout()
+      }
+      setLoading(false)
     }
     
-    setLoading(false)
+    initAuth()
   }, [])
 
   const login = async (email: string, password: string) => {

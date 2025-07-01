@@ -50,6 +50,7 @@ class AuthService {
     
     // Store token in localStorage
     localStorage.setItem('authToken', result.token);
+    localStorage.setItem('tokenExpiry', result.expiresAt);
     localStorage.setItem('user', JSON.stringify({
       email: result.email,
       firstName: result.firstName,
@@ -72,6 +73,7 @@ class AuthService {
     
     // Store token in localStorage
     localStorage.setItem('authToken', result.token);
+    localStorage.setItem('tokenExpiry', result.expiresAt);
     localStorage.setItem('user', JSON.stringify({
       email: result.email,
       firstName: result.firstName,
@@ -83,6 +85,7 @@ class AuthService {
 
   logout() {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('tokenExpiry');
     localStorage.removeItem('user');
   }
 
@@ -95,8 +98,24 @@ class AuthService {
     return userStr ? JSON.parse(userStr) : null;
   }
 
+  getTokenExpiry(): Date | null {
+    const expiry = localStorage.getItem('tokenExpiry');
+    return expiry ? new Date(expiry) : null;
+  }
+
+  isTokenValid(): boolean {
+    const token = this.getToken();
+    const expiry = this.getTokenExpiry();
+    
+    if (!token || !expiry) {
+      return false;
+    }
+    
+    return new Date() < expiry;
+  }
+
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return this.isTokenValid();
   }
 }
 
