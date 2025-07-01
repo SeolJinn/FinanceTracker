@@ -175,7 +175,7 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
                   ...prev, 
                   type: e.target.value === '' ? undefined : parseInt(e.target.value) as TransactionType 
                 }))}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md text-gray-900 bg-white"
               >
                 <option value="">All Types</option>
                 <option value={TransactionType.Income}>Income</option>
@@ -188,7 +188,7 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
                 type="date"
                 value={filter.startDate || ''}
                 onChange={(e) => setFilter(prev => ({ ...prev, startDate: e.target.value || undefined }))}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -197,7 +197,7 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
                 type="date"
                 value={filter.endDate || ''}
                 onChange={(e) => setFilter(prev => ({ ...prev, endDate: e.target.value || undefined }))}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md text-gray-900 bg-white"
               />
             </div>
             <div className="flex items-end">

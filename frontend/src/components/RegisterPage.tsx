@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate } from "react-router-dom"
 import { authService, type RegisterRequest, type ApiError } from "@/services/authService"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -20,13 +21,14 @@ export default function RegisterPage() {
   const [error, setError] = useState<string>('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const navigate = useNavigate()
+  const { register, user } = useAuth()
 
   // Check if user is already authenticated on component mount
   useEffect(() => {
-    if (authService.isTokenValid()) {
+    if (user) {
       navigate('/dashboard')
     }
-  }, [])
+  }, [user, navigate])
 
   const handleRegister = async () => {
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -56,7 +58,7 @@ export default function RegisterPage() {
         password: formData.password
       }
       
-      await authService.register(registerData)
+      await register(registerData)
       navigate('/dashboard')
     } catch (err) {
       const apiError = err as ApiError

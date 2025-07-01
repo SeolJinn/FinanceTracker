@@ -28,7 +28,7 @@ public class TransactionService : ITransactionService
             Amount = dto.Amount,
             Type = dto.Type,
             CategoryId = dto.CategoryId,
-            Date = dto.Date,
+            Date = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc),
             Note = dto.Note,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -59,10 +59,10 @@ public class TransactionService : ITransactionService
             .Where(t => t.UserId == userId);
 
         if (startDate.HasValue)
-            query = query.Where(t => t.Date >= startDate.Value);
+            query = query.Where(t => t.Date >= DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc));
 
         if (endDate.HasValue)
-            query = query.Where(t => t.Date <= endDate.Value);
+            query = query.Where(t => t.Date <= DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc));
 
         if (type.HasValue)
             query = query.Where(t => t.Type == type.Value);
@@ -98,7 +98,7 @@ public class TransactionService : ITransactionService
         }
 
         if (dto.Date.HasValue)
-            transaction.Date = dto.Date.Value;
+            transaction.Date = DateTime.SpecifyKind(dto.Date.Value, DateTimeKind.Utc);
 
         if (dto.Note != null)
             transaction.Note = dto.Note;

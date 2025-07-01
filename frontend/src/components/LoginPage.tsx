@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate } from "react-router-dom"
 import { authService, type LoginRequest, type ApiError } from "@/services/authService"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -15,13 +16,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string>('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const navigate = useNavigate()
+  const { login, user } = useAuth()
 
   // Check if user is already authenticated on component mount
   useEffect(() => {
-    if (authService.isTokenValid()) {
+    if (user) {
       navigate('/dashboard')
     }
-  }, [])
+  }, [user, navigate])
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {
@@ -34,7 +36,7 @@ export default function LoginPage() {
     setFieldErrors({})
 
     try {
-      await authService.login(formData)
+      await login(formData.email, formData.password)
       navigate('/dashboard')
     } catch (err) {
       const apiError = err as ApiError

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react'
 import { authService } from '@/services/authService'
 
 interface User {
@@ -39,37 +39,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const response = await authService.login({ email, password })
     setUser({
       email: response.email,
       firstName: response.firstName,
       lastName: response.lastName
     })
-  }
+  }, [])
 
-  const register = async (userData: { email: string; password: string; firstName: string; lastName: string }) => {
+  const register = useCallback(async (userData: { email: string; password: string; firstName: string; lastName: string }) => {
     const response = await authService.register(userData)
     setUser({
       email: response.email,
       firstName: response.firstName,
       lastName: response.lastName
     })
-  }
+  }, [])
 
-  const logout = () => {
+  const logout = useCallback(() => {
     authService.logout()
     setUser(null)
-  }
+  }, [])
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     isAuthenticated: !!user,
     login,
     register,
     logout,
     loading
-  }
+  }), [user, loading, login, register, logout])
 
   return (
     <AuthContext.Provider value={value}>

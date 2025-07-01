@@ -99,7 +99,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             name="type"
             value={formData.type}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             disabled={isLoading}
           >
             <option value={TransactionType.Expense}>Expense</option>
@@ -116,7 +116,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             onChange={handleInputChange}
             step="0.01"
             min="0.01"
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             disabled={isLoading}
             required
           />
@@ -128,7 +128,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             name="categoryId"
             value={formData.categoryId}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             disabled={isLoading}
             required
           >
@@ -148,7 +148,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             name="date"
             value={formData.date}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             disabled={isLoading}
             required
           />
@@ -161,7 +161,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             value={formData.note}
             onChange={handleInputChange}
             rows={3}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             disabled={isLoading}
             placeholder="Add a note about this transaction..."
           />
