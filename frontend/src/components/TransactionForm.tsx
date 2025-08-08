@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { DollarSign, Tag, StickyNote, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { CalendarComponent } from './Calendar';
 import { 
   TransactionType, 
   CategoryType, 
@@ -9,6 +11,13 @@ import {
   TransactionResponse,
   transactionService 
 } from '../services/transactionService';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from './ui/select';
 
 interface TransactionFormProps {
   transaction?: TransactionResponse;
@@ -82,92 +91,105 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">
-        {transaction ? 'Edit Transaction' : 'Add New Transaction'}
-      </h2>
-      
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">
+          {transaction ? 'Edit Transaction' : 'Add New Transaction'}
+        </h2>
+      </div>
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Type</label>
-          <select
-            name="type"
-            value={formData.type}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            disabled={isLoading}
-          >
-            <option value={TransactionType.Expense}>Expense</option>
-            <option value={TransactionType.Income}>Income</option>
-          </select>
+      <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-3">
+            <label className="block text-sm font-medium mb-2">Type</label>
+            <div className="inline-flex gap-2">
+              <Button
+                type="button"
+                variant={formData.type === TransactionType.Expense ? 'default' : 'outline'}
+                onClick={() => setFormData(prev => ({ ...prev, type: TransactionType.Expense }))}
+                disabled={isLoading}
+                size="sm"
+              >
+                <ArrowDownCircle className="h-4 w-4 mr-2 text-red-500" />
+                Expense
+              </Button>
+              <Button
+                type="button"
+                variant={formData.type === TransactionType.Income ? 'default' : 'outline'}
+                onClick={() => setFormData(prev => ({ ...prev, type: TransactionType.Income }))}
+                disabled={isLoading}
+                size="sm"
+              >
+                <ArrowUpCircle className="h-4 w-4 mr-2 text-green-500" />
+                Income
+              </Button>
+            </div>
+          </div>
+          <div className="lg:col-span-3">
+            <label className="block text-sm font-medium mb-2">Amount</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0.01"
+                className="w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition"
+                disabled={isLoading}
+                required
+              />
+            </div>
+          </div>
+          <div className="lg:col-span-3">
+            <label className="block text-sm font-medium mb-2">Category</label>
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Select
+                value={String(formData.categoryId || '')}
+                onValueChange={(val: string) =>
+                  setFormData((prev) => ({ ...prev, categoryId: parseInt(val) }))
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger className="pl-10">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="lg:col-span-3">
+            <label className="block text-sm font-medium mb-2">Date</label>
+            <CalendarComponent />
+          </div>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Amount</label>
-          <input
-            type="number"
-            name="amount"
-            value={formData.amount}
-            onChange={handleInputChange}
-            step="0.01"
-            min="0.01"
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            disabled={isLoading}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Category</label>
-          <select
-            name="categoryId"
-            value={formData.categoryId}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            disabled={isLoading}
-            required
-          >
-            <option value={0}>Select a category</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Date</label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            disabled={isLoading}
-            required
-          />
-        </div>
-
         <div>
           <label className="block text-sm font-medium mb-2">Note (optional)</label>
-          <textarea
-            name="note"
-            value={formData.note}
-            onChange={handleInputChange}
-            rows={3}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            disabled={isLoading}
-            placeholder="Add a note about this transaction..."
-          />
+          <div className="relative">
+            <StickyNote className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <textarea
+              name="note"
+              value={formData.note}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              disabled={isLoading}
+              placeholder="Add a note about this transaction..."
+            />
+          </div>
         </div>
-
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={isLoading}>
             {isLoading ? 'Saving...' : (transaction ? 'Update' : 'Add')} Transaction
           </Button>

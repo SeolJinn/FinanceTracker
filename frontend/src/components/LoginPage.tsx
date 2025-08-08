@@ -3,7 +3,7 @@ import { Wallet, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate } from "react-router-dom"
-import { authService, type LoginRequest, type ApiError } from "@/services/authService"
+import { type LoginRequest, type ApiError } from "@/services/authService"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {

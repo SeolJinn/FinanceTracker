@@ -11,6 +11,15 @@ import {
   transactionService,
   ApiError
 } from '../services/transactionService';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from './ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface TransactionPageProps {
   onBack?: () => void;
@@ -23,6 +32,8 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
   const [filter, setFilter] = useState<{
     type?: TransactionType;
     startDate?: string;
@@ -43,6 +54,8 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
         filter.type
       );
       setTransactions(data);
+      const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+      setPage((p) => Math.min(p, totalPages));
     } catch (err) {
       const error = err as ApiError;
       setError(error.message || 'Failed to load transactions');
@@ -115,8 +128,27 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
     }).format(amount);
   };
 
+  const toYMD = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const parseYMD = (value?: string) => {
+    if (!value) return undefined;
+    const [y, m, d] = value.split('-').map((x) => parseInt(x, 10));
+    if (!y || !m || !d) return undefined;
+    return new Date(y, m - 1, d);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(transactions.length / pageSize));
+  const startIndex = transactions.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = transactions.length === 0 ? 0 : Math.min(page * pageSize, transactions.length);
+  const paginatedTransactions = transactions.slice((page - 1) * pageSize, page * pageSize);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto max-w-[1600px] px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           {onBack && (
@@ -141,24 +173,24 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+        <Card className="p-4 lg:col-span-3">
           <h3 className="text-sm font-medium text-gray-500 mb-1">Total Income</h3>
           <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.income)}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 lg:col-span-3">
           <h3 className="text-sm font-medium text-gray-500 mb-1">Total Expenses</h3>
           <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.expenses)}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 lg:col-span-3">
           <h3 className="text-sm font-medium text-gray-500 mb-1">Balance</h3>
           <p className={`text-2xl font-bold ${totals.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {formatCurrency(totals.balance)}
           </p>
         </Card>
-        <Card className="p-4">
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Transactions</h3>
-          <p className="text-2xl font-bold text-gray-900">{transactions.length}</p>
+        <Card className="p-4 lg:col-span-3">
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">Transactions</h3>
+          <p className="text-2xl font-bold text-foreground">{transactions.length}</p>
         </Card>
       </div>
 
@@ -166,41 +198,80 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
       {!showForm && (
         <Card className="p-4 mb-6">
           <h3 className="text-lg font-medium mb-3">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-3">
               <label className="block text-sm font-medium mb-1">Type</label>
-              <select
-                value={filter.type ?? ''}
-                onChange={(e) => setFilter(prev => ({ 
-                  ...prev, 
-                  type: e.target.value === '' ? undefined : parseInt(e.target.value) as TransactionType 
-                }))}
-                className="w-full p-2 border border-gray-300 rounded-md text-gray-900 bg-white"
+              <Select
+                value={String(typeof filter.type === 'number' ? filter.type : '')}
+                onValueChange={(val: string) =>
+                  setFilter((prev) => ({
+                    ...prev,
+                    type: parseInt(val) as TransactionType,
+                  }))
+                }
               >
-                <option value="">All Types</option>
-                <option value={TransactionType.Income}>Income</option>
-                <option value={TransactionType.Expense}>Expense</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={String(TransactionType.Income)}>
+                    Income
+                  </SelectItem>
+                  <SelectItem value={String(TransactionType.Expense)}>
+                    Expense
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div>
+            <div className="lg:col-span-3">
               <label className="block text-sm font-medium mb-1">Start Date</label>
-              <input
-                type="date"
-                value={filter.startDate || ''}
-                onChange={(e) => setFilter(prev => ({ ...prev, startDate: e.target.value || undefined }))}
-                className="w-full p-2 border border-gray-300 rounded-md text-gray-900 bg-white"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-left text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    {filter.startDate ? parseYMD(filter.startDate)?.toLocaleDateString() : 'Start date'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 border-0 w-auto bg-transparent shadow-none" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={parseYMD(filter.startDate)}
+                    onSelect={(d) =>
+                      setFilter((prev) => ({ ...prev, startDate: d ? toYMD(d) : undefined }))
+                    }
+                    className="rounded-md border shadow-sm"
+                    captionLayout="label"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div>
+            <div className="lg:col-span-3">
               <label className="block text-sm font-medium mb-1">End Date</label>
-              <input
-                type="date"
-                value={filter.endDate || ''}
-                onChange={(e) => setFilter(prev => ({ ...prev, endDate: e.target.value || undefined }))}
-                className="w-full p-2 border border-gray-300 rounded-md text-gray-900 bg-white"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-left text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    {filter.endDate ? parseYMD(filter.endDate)?.toLocaleDateString() : 'End date'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 border-0 w-auto bg-transparent shadow-none" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={parseYMD(filter.endDate)}
+                    onSelect={(d) =>
+                      setFilter((prev) => ({ ...prev, endDate: d ? toYMD(d) : undefined }))
+                    }
+                    className="rounded-md border shadow-sm"
+                    captionLayout="label"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end lg:col-span-3">
               <Button 
                 variant="outline" 
                 onClick={() => setFilter({})}
@@ -228,12 +299,65 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
               <p>Loading transactions...</p>
             </Card>
           ) : (
-            <TransactionList
-              transactions={transactions}
-              onEdit={handleEditTransaction}
-              onDelete={handleDeleteTransaction}
-              isLoading={submitting}
-            />
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex}-{endIndex} of {transactions.length}
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm">Rows per page</label>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(val: string) => {
+                      setPageSize(parseInt(val, 10));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 w-[90px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[5, 10, 20, 50, 100].map((s) => (
+                        <SelectItem key={s} value={String(s)}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="max-h-[60vh] overflow-auto pr-1 custom-scrollbar">
+                <TransactionList
+                  transactions={paginatedTransactions}
+                  onEdit={handleEditTransaction}
+                  onDelete={handleDeleteTransaction}
+                  isLoading={submitting}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </>
       )}
