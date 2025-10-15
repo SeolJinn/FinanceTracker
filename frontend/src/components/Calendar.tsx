@@ -45,9 +45,12 @@ export function CalendarComponent({
           mode="single"
           selected={date}
           onSelect={(d) => {
-            if (isControlled) {
-              onChange && onChange(d)
-            } else {
+            // Always notify parent if onChange is provided
+            if (onChange) {
+              onChange(d)
+            }
+            // Maintain internal state for uncontrolled usage
+            if (!isControlled) {
               setInternalDate(d)
             }
             if (d) setOpen(false)

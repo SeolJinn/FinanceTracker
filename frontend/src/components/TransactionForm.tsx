@@ -89,6 +89,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }));
   };
 
+  const toYMD = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const parseYMD = (value?: string) => {
+    if (!value) return undefined;
+    const [y, m, d] = value.split('-').map((x) => parseInt(x, 10));
+    if (!y || !m || !d) return undefined;
+    return new Date(y, m - 1, d);
+  };
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
@@ -171,7 +185,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
           <div className="lg:col-span-3">
             <label className="block text-sm font-medium mb-2">Date</label>
-            <CalendarComponent />
+            <CalendarComponent 
+              value={parseYMD(formData.date)}
+              onChange={(d) => {
+                if (d) {
+                  setFormData(prev => ({ ...prev, date: toYMD(d) }));
+                }
+              }}
+            />
           </div>
         </div>
         <div>

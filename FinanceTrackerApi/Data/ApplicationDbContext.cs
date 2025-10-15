@@ -12,6 +12,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<SavingsGoal> SavingsGoals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +52,21 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Type).IsRequired();
             entity.HasIndex(e => new { e.Name, e.Type }).IsUnique();
+        });
+
+        modelBuilder.Entity<SavingsGoal>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TargetAmount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.StartDate).IsRequired();
+            entity.Property(e => e.TargetDate).IsRequired();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.UserId).IsUnique(); // one goal per user
         });
     }
 }

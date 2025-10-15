@@ -55,3 +55,21 @@ public class CategoryDto
     public string Name { get; set; } = string.Empty;
     public CategoryType Type { get; set; }
 }
+
+public class SavingsGoalDto
+{
+    public decimal TargetAmount { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime TargetDate { get; set; }
+}
+
+public class SavingsGoalResponseDto
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public decimal TargetAmount { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime TargetDate { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
