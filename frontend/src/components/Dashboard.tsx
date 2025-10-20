@@ -6,12 +6,13 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useMemo } from "react"
 import { TransactionPage } from "./TransactionPage"
+import { walletService } from "../services/walletService"
 import { TransactionResponse, TransactionType, transactionService } from "../services/transactionService"
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts"
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from "recharts"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CalendarComponent } from "./Calendar"
-import { savingsGoalService } from "../services/savingsGoalService"
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Dashboard() {
   const { logout, user } = useAuth()
@@ -20,17 +21,40 @@ export default function Dashboard() {
   const [allTransactions, setAllTransactions] = useState<TransactionResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [chartRange, setChartRange] = useState<'7d' | '30d' | '3m' | '6m' | '12m' | 'ytd'>('6m')
+  const [wallets, setWallets] = useState<{ id: number; name: string; currencyCode: string }[]>([])
+  const [currentWalletId, setCurrentWalletId] = useState<number | null>(null)
 
   useEffect(() => {
     if (currentView === 'dashboard') {
       loadDashboardData()
     }
-  }, [currentView])
+  }, [currentView, currentWalletId])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const ws = await walletService.list()
+        setWallets(ws)
+        if (ws.length > 0 && currentWalletId == null) {
+          const saved = localStorage.getItem('selectedWalletId')
+          const savedId = saved ? parseInt(saved, 10) : NaN
+          const exists = ws.some(w => w.id === savedId)
+          setCurrentWalletId(exists ? savedId : ws[0].id)
+        }
+      } catch {}
+    })()
+  }, [])
+
+  useEffect(() => {
+    if (currentWalletId != null) {
+      localStorage.setItem('selectedWalletId', String(currentWalletId))
+    }
+  }, [currentWalletId])
 
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      const transactions = await transactionService.getTransactions()
+      const transactions = await transactionService.getTransactions(undefined, undefined, undefined, currentWalletId ?? undefined)
       const sorted = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       setAllTransactions(sorted)
     } catch (error) {
@@ -154,9 +178,10 @@ export default function Dashboard() {
   }
 
   const formatCurrency = (amount: number) => {
+    const currency = wallets.find(w => w.id === currentWalletId)?.currencyCode || 'USD'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency
     }).format(amount)
   }
 
@@ -167,12 +192,6 @@ export default function Dashboard() {
     return `${y}-${m}-${d}`
   }
 
-  const parseYMD = (value?: string) => {
-    if (!value) return undefined as unknown as Date | undefined
-    const [y, m, d] = value.split('-').map((x) => parseInt(x, 10))
-    if (!y || !m || !d) return undefined as unknown as Date | undefined
-    return new Date(y, m - 1, d)
-  }
 
   const handleLogout = () => {
     logout()
@@ -219,156 +238,6 @@ export default function Dashboard() {
     '#8b5cf6',
   ]
 
-  type SavingsGoal = {
-    targetAmount: number
-    targetDate: string
-    startDate: string
-  }
-
-  const [savingsGoal, setSavingsGoal] = useState<SavingsGoal | null>(null)
-  const [goalEditing, setGoalEditing] = useState(false)
-  const [goalForm, setGoalForm] = useState<{ targetAmount: string; targetDate: string; startDate: string }>({
-    targetAmount: '',
-    targetDate: '',
-    startDate: ''
-  })
-  const [goalError, setGoalError] = useState<string>('')
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const goal = await savingsGoalService.get()
-        if (goal) {
-          setSavingsGoal({
-            targetAmount: goal.targetAmount,
-            startDate: goal.startDate.split('T')[0],
-            targetDate: goal.targetDate.split('T')[0],
-          })
-        }
-      } catch {}
-    })()
-  }, [])
-
-  useEffect(() => {
-    if (goalEditing && savingsGoal) {
-      setGoalForm({
-        targetAmount: String(savingsGoal.targetAmount),
-        startDate: savingsGoal.startDate,
-        targetDate: savingsGoal.targetDate,
-      })
-    }
-  }, [goalEditing, savingsGoal])
-
-  const saveSavingsGoal = () => {
-    setGoalError('')
-    const amount = parseFloat(goalForm.targetAmount)
-    if (!isFinite(amount) || amount <= 0) {
-      setGoalError('Please enter a valid target amount greater than 0.')
-      return
-    }
-    if (!goalForm.startDate || !goalForm.targetDate) {
-      setGoalError('Please select both a start date and a target date.')
-      return
-    }
-    const start = new Date(goalForm.startDate)
-    const end = new Date(goalForm.targetDate)
-    if (!(start instanceof Date) || !(end instanceof Date) || isNaN(start.getTime()) || isNaN(end.getTime())) {
-      setGoalError('Dates are invalid. Please pick valid dates.')
-      return
-    }
-    if (end <= start) {
-      setGoalError('Target date must be after the start date.')
-      return
-    }
-    const goal: SavingsGoal = { targetAmount: amount, targetDate: goalForm.targetDate, startDate: goalForm.startDate }
-    ;(async () => {
-      try {
-        await savingsGoalService.upsert({
-          targetAmount: goal.targetAmount,
-          startDate: goal.startDate,
-          targetDate: goal.targetDate,
-        })
-        setSavingsGoal(goal)
-        setGoalEditing(false)
-      } catch (e: any) {
-        setGoalError(e?.message || 'Failed to save goal')
-      }
-    })()
-  }
-
-  const clearSavingsGoal = () => {
-    ;(async () => {
-      try {
-        await savingsGoalService.delete()
-        setSavingsGoal(null)
-        setGoalError('')
-      } catch (e: any) {
-        setGoalError(e?.message || 'Failed to clear goal')
-      }
-    })()
-  }
-
-  type SavingsPoint = { label: string; ideal: number; actual: number }
-
-  const buildSavingsChartData = (goal: SavingsGoal | null): SavingsPoint[] => {
-    if (!goal) return []
-    const start = parseYMD(goal.startDate) as Date
-    const end = parseYMD(goal.targetDate) as Date
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return []
-    const now = new Date()
-    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    const useMonthly = totalDays > 210
-
-    const buckets: { key: string; label: string; date: Date }[] = []
-    if (useMonthly) {
-      const startMonth = new Date(start.getFullYear(), start.getMonth(), 1)
-      const endMonth = new Date(end.getFullYear(), end.getMonth(), 1)
-      const cursor = new Date(startMonth)
-      while (cursor <= endMonth) {
-        const key = `${cursor.getFullYear()}-${cursor.getMonth()}`
-        const label = cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-        buckets.push({ key, label, date: new Date(cursor) })
-        cursor.setMonth(cursor.getMonth() + 1)
-      }
-    } else {
-      const cursor = new Date(start)
-      while (cursor <= end) {
-        const key = toYMD(cursor)
-        const label = cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        buckets.push({ key, label, date: new Date(cursor) })
-        cursor.setDate(cursor.getDate() + 1)
-      }
-    }
-
-    const netByKey = new Map<string, number>()
-    for (const b of buckets) netByKey.set(b.key, 0)
-    for (const t of allTransactions) {
-      const d = new Date(t.date)
-      // Compare using local date keys to avoid timezone drift
-      const dayKey = toYMD(d)
-      const startKey = goal.startDate
-      const endKey = goal.targetDate
-      if (dayKey < startKey || dayKey > endKey) continue
-      const key = useMonthly ? `${d.getFullYear()}-${d.getMonth()}` : dayKey
-      if (!netByKey.has(key)) continue
-      const delta = t.type === TransactionType.Income ? t.amount : -t.amount
-      netByKey.set(key, (netByKey.get(key) || 0) + delta)
-    }
-
-    const totalDurationMs = end.getTime() - start.getTime()
-    let runningActual = 0
-    const data: SavingsPoint[] = []
-    for (const b of buckets) {
-      if (b.date <= now) {
-        runningActual += netByKey.get(b.key) || 0
-      }
-      const timeMs = Math.min(b.date.getTime(), end.getTime()) - start.getTime()
-      const fraction = Math.max(0, Math.min(1, timeMs / totalDurationMs))
-      const ideal = goal.targetAmount * fraction
-      data.push({ label: b.label, ideal, actual: Math.max(0, runningActual) })
-    }
-    return data
-  }
 
   if (currentView === 'transactions') {
     return <TransactionPage onBack={() => setCurrentView('dashboard')} />
@@ -399,6 +268,38 @@ export default function Dashboard() {
               <Plus className="h-4 w-4" />
               Add / Manage
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/wallets')}
+            >
+              Wallets
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/goals')}
+            >
+              Savings
+            </Button>
+            <div className="hidden md:flex items-center gap-2 ml-1">
+              <div className="text-xs text-muted-foreground">Wallet:</div>
+              <Select
+                value={String(currentWalletId ?? '')}
+                onValueChange={(val: string) => setCurrentWalletId(val ? parseInt(val) : null)}
+              >
+                <SelectTrigger className="h-8 w-[200px]">
+                  <SelectValue placeholder="Select wallet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={String(w.id)}>
+                      {w.name} ({w.currencyCode})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <ThemeToggle />
             <TooltipProvider>
               <UiTooltip>
@@ -508,7 +409,7 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="label" />
                       <YAxis tickFormatter={(v: number) => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)} />
-                       <RechartsTooltip formatter={(value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)} />
+                       <RechartsTooltip formatter={(value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: wallets.find(w => w.id === currentWalletId)?.currencyCode || 'USD' }).format(value)} />
                       <Legend />
                       <Bar dataKey="income" name="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -550,7 +451,7 @@ export default function Dashboard() {
                         ))}
                       </Pie>
                       <RechartsTooltip formatter={(value: number, name: string) => [
-                        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value as number),
+                        new Intl.NumberFormat('en-US', { style: 'currency', currency: wallets.find(w => w.id === currentWalletId)?.currencyCode || 'USD' }).format(value as number),
                         name as string
                       ]} />
                     </PieChart>
@@ -571,138 +472,6 @@ export default function Dashboard() {
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-12">
-          <Card className="lg:col-span-12 order-1">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Savings Goal</CardTitle>
-                {!goalEditing && (
-                  <div className="flex gap-2">
-                    {savingsGoal && (
-                      <Button variant="outline" size="sm" onClick={() => setGoalEditing(true)}>Edit</Button>
-                    )}
-                    {savingsGoal && (
-                      <Button variant="destructive" size="sm" onClick={clearSavingsGoal}>Clear</Button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <CardDescription>Track progress toward a target amount by a target date</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!savingsGoal || goalEditing ? (
-                <div className="grid gap-3 max-w-xl">
-                  {goalError && (
-                    <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded px-3 py-2">
-                      {goalError}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="sm:col-span-1">
-                      <div className="text-xs text-muted-foreground mb-1">Target amount</div>
-                      <input
-                        type="number"
-                        value={goalForm.targetAmount}
-                        onChange={(e) => setGoalForm({ ...goalForm, targetAmount: e.target.value })}
-                        placeholder="e.g. 5000"
-                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <div className="text-xs text-muted-foreground mb-1">Start date</div>
-                      <CalendarComponent
-                        value={goalForm.startDate ? parseYMD(goalForm.startDate) : undefined}
-                        onChange={(d) => setGoalForm({ ...goalForm, startDate: d ? toYMD(d) : '' })}
-                        placeholder="Pick start date"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <div className="text-xs text-muted-foreground mb-1">Target date</div>
-                      <CalendarComponent
-                        value={goalForm.targetDate ? parseYMD(goalForm.targetDate) : undefined}
-                        onChange={(d) => setGoalForm({ ...goalForm, targetDate: d ? toYMD(d) : '' })}
-                        placeholder="Pick target date"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={saveSavingsGoal}>Save goal</Button>
-                    {savingsGoal && (
-                      <Button variant="outline" size="sm" onClick={() => setGoalEditing(false)}>Cancel</Button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                    <div className="rounded-md border p-3">
-                      <div className="text-xs text-muted-foreground">Target</div>
-                      <div className="font-medium">{formatCurrency(savingsGoal.targetAmount)}</div>
-                    </div>
-                    <div className="rounded-md border p-3">
-                      <div className="text-xs text-muted-foreground">Start</div>
-                      <div className="font-medium">{(parseYMD(savingsGoal.startDate) as Date).toLocaleDateString()}</div>
-                    </div>
-                    <div className="rounded-md border p-3">
-                      <div className="text-xs text-muted-foreground">Target date</div>
-                      <div className="font-medium">{(parseYMD(savingsGoal.targetDate) as Date).toLocaleDateString()}</div>
-                    </div>
-                    <div className="rounded-md border p-3">
-                      {(() => {
-                        const data = buildSavingsChartData(savingsGoal)
-                        const current = data.length ? data[data.length - 1].actual : 0
-                        const pct = Math.max(0, Math.min(100, (current / (savingsGoal.targetAmount || 1)) * 100))
-                        return (
-                          <>
-                            <div className="text-xs text-muted-foreground">Progress</div>
-                            <div className="font-medium">{pct.toFixed(0)}%</div>
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </div>
-                  {(() => {
-                    const data = buildSavingsChartData(savingsGoal)
-                    const current = data.length ? data[data.length - 1].actual : 0
-                    const now = new Date()
-                    const end = parseYMD(savingsGoal.targetDate) as Date
-                    const msPerDay = 1000 * 60 * 60 * 24
-                    const daysLeft = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / msPerDay))
-                    const remaining = Math.max(0, savingsGoal.targetAmount - current)
-                    const neededPerDay = daysLeft > 0 ? remaining / daysLeft : 0
-                    return (
-                      <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="rounded-md border p-3">
-                          <div className="text-xs text-muted-foreground">Remaining</div>
-                          <div className="font-medium">{formatCurrency(remaining)}</div>
-                        </div>
-                        <div className="rounded-md border p-3">
-                          <div className="text-xs text-muted-foreground">Days left</div>
-                          <div className="font-medium">{daysLeft}</div>
-                        </div>
-                        <div className="rounded-md border p-3">
-                          <div className="text-xs text-muted-foreground">Needed per day</div>
-                          <div className="font-medium">{formatCurrency(neededPerDay)}</div>
-                        </div>
-                      </div>
-                    )
-                  })()}
-                  <div className="h-[320px] xl:h-[380px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={buildSavingsChartData(savingsGoal)} margin={{ left: 8, right: 8, top: 8 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="label" />
-                        <YAxis tickFormatter={(v: number) => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)} />
-                        <RechartsTooltip formatter={(value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)} />
-                        <Legend />
-                        <Line type="monotone" dataKey="ideal" name="Ideal trajectory" stroke="#3b82f6" dot={false} strokeWidth={2} />
-                        <Line type="monotone" dataKey="actual" name="Actual savings" stroke="#10b981" dot={false} strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
 
           <Card className="lg:col-span-8">
             <CardHeader>

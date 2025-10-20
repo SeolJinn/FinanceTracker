@@ -18,6 +18,9 @@ public class Transaction
     
     [Required]
     public int CategoryId { get; set; }
+
+	[Required]
+	public int WalletId { get; set; }
     
     [Required]
     public DateTime Date { get; set; }
@@ -31,6 +34,7 @@ public class Transaction
     // Navigation properties
     public User User { get; set; } = null!;
     public Category Category { get; set; } = null!;
+	public Wallet Wallet { get; set; } = null!;
 }
 
 public enum TransactionType

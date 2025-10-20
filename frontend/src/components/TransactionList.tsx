@@ -18,10 +18,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 }) => {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency
     }).format(amount);
   };
 
@@ -76,7 +76,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 <span className={`text-lg font-semibold ${
                   transaction.type === TransactionType.Income ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {transaction.type === TransactionType.Income ? '+' : '-'}{formatCurrency(transaction.amount)}
+                  {transaction.type === TransactionType.Income ? '+' : '-'}{formatCurrency(transaction.amount, transaction.walletCurrency || 'USD')}
                 </span>
                 {transaction.note && (
                   <p className="text-gray-600 text-sm mt-1">{transaction.note}</p>

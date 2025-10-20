@@ -11,6 +11,7 @@ import {
   TransactionResponse,
   transactionService 
 } from '../services/transactionService';
+import { walletService } from '../services/walletService';
 import { 
   Select, 
   SelectContent, 
@@ -36,15 +37,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     amount: transaction?.amount || 0,
     type: transaction?.type || TransactionType.Expense,
     categoryId: transaction?.categoryId || 0,
+    walletId: (transaction as any)?.walletId || 0,
     date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0],
     note: transaction?.note || ''
   });
   
   const [categories, setCategories] = useState<Category[]>([]);
+  const [wallets, setWallets] = useState<{ id: number; name: string; currencyCode: string }[]>([]);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
     loadCategories();
+    loadWallets();
   }, [formData.type]);
 
   const loadCategories = async () => {
@@ -61,6 +65,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
+  const loadWallets = async () => {
+    try {
+      const data = await walletService.list();
+      setWallets(data);
+      if (data.length > 0 && !transaction) {
+        setFormData(prev => ({ ...prev, walletId: data[0].id }));
+      }
+    } catch (err) {
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -71,6 +86,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     
     if (formData.categoryId === 0) {
       setError('Please select a category');
+      return;
+    }
+    if (!formData.walletId || formData.walletId === 0) {
+      setError('Please select a wallet');
       return;
     }
     
@@ -85,7 +104,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       ...prev,
       [name]: name === 'amount' ? parseFloat(value) || 0 : 
                name === 'type' ? parseInt(value) as TransactionType :
-               name === 'categoryId' ? parseInt(value) : value
+               name === 'categoryId' ? parseInt(value) :
+               name === 'walletId' ? parseInt(value) : value
     }));
   };
 
@@ -183,6 +203,21 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               </Select>
             </div>
           </div>
+        <div className="lg:col-span-3">
+          <label className="block text-sm font-medium mb-2">Wallet</label>
+          <select
+            name="walletId"
+            value={formData.walletId}
+            onChange={handleInputChange}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            disabled={isLoading}
+          >
+            <option value={0}>Select a wallet</option>
+            {wallets.map((w) => (
+              <option key={w.id} value={w.id}>{w.name} ({w.currencyCode})</option>
+            ))}
+          </select>
+        </div>
           <div className="lg:col-span-3">
             <label className="block text-sm font-medium mb-2">Date</label>
             <CalendarComponent 

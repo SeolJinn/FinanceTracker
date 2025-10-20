@@ -14,6 +14,7 @@ export interface CreateTransactionRequest {
   amount: number;
   type: TransactionType;
   categoryId: number;
+  walletId: number;
   date: string;
   note?: string;
 }
@@ -22,6 +23,7 @@ export interface UpdateTransactionRequest {
   amount?: number;
   type?: TransactionType;
   categoryId?: number;
+  walletId?: number;
   date?: string;
   note?: string;
 }
@@ -33,6 +35,8 @@ export interface TransactionResponse {
   type: TransactionType;
   categoryId: number;
   categoryName: string;
+  walletId: number;
+  walletCurrency: string;
   date: string;
   note?: string;
   createdAt: string;
@@ -83,12 +87,14 @@ class TransactionService {
   async getTransactions(
     startDate?: string,
     endDate?: string,
-    type?: TransactionType
+    type?: TransactionType,
+    walletId?: number
   ): Promise<TransactionResponse[]> {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     if (type !== undefined) params.append('type', type.toString());
+    if (walletId !== undefined) params.append('walletId', walletId.toString());
 
     const response = await fetch(`${API_BASE_URL}/transaction?${params}`, {
       method: 'GET',

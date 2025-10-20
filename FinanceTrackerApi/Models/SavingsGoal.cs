@@ -10,6 +10,9 @@ public class SavingsGoal
     public int UserId { get; set; }
 
     [Required]
+    public int WalletId { get; set; }
+
+    [Required]
     [Range(0.01, double.MaxValue, ErrorMessage = "Target amount must be greater than 0")]
     public decimal TargetAmount { get; set; }
 
@@ -19,12 +22,16 @@ public class SavingsGoal
     [Required]
     public DateTime TargetDate { get; set; }
 
+    [MaxLength(100)]
+    public string? Title { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
     public User User { get; set; } = null!;
+    public Wallet Wallet { get; set; } = null!;
 }
 
 

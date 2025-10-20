@@ -41,6 +41,18 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        // Ensure a default USD wallet exists for new users
+        var defaultWallet = new Models.Wallet
+        {
+            UserId = user.Id,
+            Name = "Main",
+            CurrencyCode = "USD",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Wallets.Add(defaultWallet);
+        await _context.SaveChangesAsync();
+
         return GenerateAuthResponse(user);
     }
 

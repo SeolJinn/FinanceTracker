@@ -19,21 +19,29 @@ public class SavingsGoalController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<SavingsGoalResponseDto?>> Get()
+    public async Task<ActionResult<IEnumerable<SavingsGoalResponseDto>>> List([FromQuery] int? walletId)
     {
         var userId = GetUserId();
-        var goal = await _service.GetAsync(userId);
+        var goals = await _service.ListAsync(userId, walletId);
+        return Ok(goals);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<SavingsGoalResponseDto>> GetById(int id)
+    {
+        var userId = GetUserId();
+        var goal = await _service.GetByIdAsync(userId, id);
         if (goal == null) return NotFound();
         return Ok(goal);
     }
 
-    [HttpPut]
-    public async Task<ActionResult<SavingsGoalResponseDto>> Upsert([FromBody] SavingsGoalDto dto)
+    [HttpPost]
+    public async Task<ActionResult<SavingsGoalResponseDto>> Create([FromBody] CreateSavingsGoalDto dto)
     {
         try
         {
             var userId = GetUserId();
-            var goal = await _service.UpsertAsync(userId, dto);
+            var goal = await _service.CreateAsync(userId, dto);
             return Ok(goal);
         }
         catch (ArgumentException ex)
@@ -42,11 +50,27 @@ public class SavingsGoalController : ControllerBase
         }
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete()
+    [HttpPut("{id}")]
+    public async Task<ActionResult<SavingsGoalResponseDto>> Update(int id, [FromBody] UpdateSavingsGoalDto dto)
+    {
+        try
+        {
+            var userId = GetUserId();
+            var goal = await _service.UpdateAsync(userId, id, dto);
+            if (goal == null) return NotFound();
+            return Ok(goal);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
     {
         var userId = GetUserId();
-        var deleted = await _service.DeleteAsync(userId);
+        var deleted = await _service.DeleteAsync(userId, id);
         if (!deleted) return NotFound();
         return NoContent();
     }

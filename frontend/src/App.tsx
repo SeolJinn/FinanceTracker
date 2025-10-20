@@ -3,6 +3,8 @@ import LandingPage from "@/components/LandingPage"
 import LoginPage from "@/components/LoginPage"
 import RegisterPage from "@/components/RegisterPage"
 import Dashboard from "@/components/Dashboard"
+import WalletsPage from "@/components/WalletsPage"
+import SavingsGoalsPage from "./components/SavingsGoalsPage"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
@@ -17,6 +19,16 @@ export default function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/wallets" element={
+            <ProtectedRoute>
+              <WalletsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/goals" element={
+            <ProtectedRoute>
+              <SavingsGoalsPage />
             </ProtectedRoute>
           } />
         </Routes>

@@ -22,12 +22,19 @@ public class TransactionService : ITransactionService
             throw new ArgumentException("Category not found");
         }
 
+        var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.Id == dto.WalletId && w.UserId == userId);
+        if (wallet == null)
+        {
+            throw new ArgumentException("Wallet not found");
+        }
+
         var transaction = new Transaction
         {
             UserId = userId,
             Amount = dto.Amount,
             Type = dto.Type,
             CategoryId = dto.CategoryId,
+            WalletId = dto.WalletId,
             Date = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc),
             Note = dto.Note,
             CreatedAt = DateTime.UtcNow,
@@ -52,10 +59,11 @@ public class TransactionService : ITransactionService
         return MapToResponseDto(transaction);
     }
 
-    public async Task<IEnumerable<TransactionResponseDto>> GetTransactionsAsync(int userId, DateTime? startDate = null, DateTime? endDate = null, TransactionType? type = null)
+    public async Task<IEnumerable<TransactionResponseDto>> GetTransactionsAsync(int userId, DateTime? startDate = null, DateTime? endDate = null, TransactionType? type = null, int? walletId = null)
     {
         var query = _context.Transactions
             .Include(t => t.Category)
+            .Include(t => t.Wallet)
             .Where(t => t.UserId == userId);
 
         if (startDate.HasValue)
@@ -66,6 +74,9 @@ public class TransactionService : ITransactionService
 
         if (type.HasValue)
             query = query.Where(t => t.Type == type.Value);
+
+        if (walletId.HasValue)
+            query = query.Where(t => t.WalletId == walletId.Value);
 
         var transactions = await query
             .OrderByDescending(t => t.Date)
@@ -95,6 +106,14 @@ public class TransactionService : ITransactionService
             if (category == null)
                 throw new ArgumentException("Category not found");
             transaction.CategoryId = dto.CategoryId.Value;
+        }
+
+        if (dto.WalletId.HasValue)
+        {
+            var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.Id == dto.WalletId.Value && w.UserId == userId);
+            if (wallet == null)
+                throw new ArgumentException("Wallet not found");
+            transaction.WalletId = dto.WalletId.Value;
         }
 
         if (dto.Date.HasValue)
@@ -147,6 +166,7 @@ public class TransactionService : ITransactionService
     {
         var transaction = await _context.Transactions
             .Include(t => t.Category)
+            .Include(t => t.Wallet)
             .FirstAsync(t => t.Id == transactionId);
 
         return MapToResponseDto(transaction);
@@ -162,6 +182,8 @@ public class TransactionService : ITransactionService
             Type = transaction.Type,
             CategoryId = transaction.CategoryId,
             CategoryName = transaction.Category.Name,
+            WalletId = transaction.WalletId,
+            WalletCurrency = transaction.Wallet.CurrencyCode,
             Date = transaction.Date,
             Note = transaction.Note,
             CreatedAt = transaction.CreatedAt,

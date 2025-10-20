@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue
 } from './ui/select';
+import { walletService } from '../services/walletService';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
@@ -38,11 +39,25 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
     type?: TransactionType;
     startDate?: string;
     endDate?: string;
+    walletId?: number;
   }>({});
+  const [wallets, setWallets] = useState<{ id: number; name: string; currencyCode: string }[]>([]);
 
   useEffect(() => {
     loadTransactions();
   }, [filter]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const ws = await walletService.list();
+        setWallets(ws);
+        if (ws.length > 0) {
+          setFilter(prev => ({ ...prev, walletId: prev.walletId ?? ws[0].id }));
+        }
+      } catch {}
+    })();
+  }, []);
 
   const loadTransactions = async () => {
     try {
@@ -51,7 +66,8 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
       const data = await transactionService.getTransactions(
         filter.startDate,
         filter.endDate,
-        filter.type
+        filter.type,
+        filter.walletId
       );
       setTransactions(data);
       const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
@@ -122,9 +138,11 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
   const totals = calculateTotals();
 
   const formatCurrency = (amount: number) => {
+    const current = wallets.find(w => w.id === filter.walletId);
+    const currency = current?.currencyCode || 'USD';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency
     }).format(amount);
   };
 
@@ -220,6 +238,26 @@ export const TransactionPage: React.FC<TransactionPageProps> = ({ onBack }) => {
                   <SelectItem value={String(TransactionType.Expense)}>
                     Expense
                   </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="lg:col-span-3">
+              <label className="block text-sm font-medium mb-1">Wallet</label>
+              <Select
+                value={String(filter.walletId || '')}
+                onValueChange={(val: string) =>
+                  setFilter((prev) => ({ ...prev, walletId: parseInt(val) }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Wallets" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={String(w.id)}>
+                      {w.name} ({w.currencyCode})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -50,10 +50,11 @@ public class TransactionController : ControllerBase
     public async Task<ActionResult<IEnumerable<TransactionResponseDto>>> GetTransactions(
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
-        [FromQuery] TransactionType? type = null)
+        [FromQuery] TransactionType? type = null,
+        [FromQuery] int? walletId = null)
     {
         var userId = GetUserId();
-        var transactions = await _transactionService.GetTransactionsAsync(userId, startDate, endDate, type);
+        var transactions = await _transactionService.GetTransactionsAsync(userId, startDate, endDate, type, walletId);
         return Ok(transactions);
     }
 
