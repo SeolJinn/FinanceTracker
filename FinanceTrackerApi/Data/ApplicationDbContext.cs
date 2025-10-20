@@ -14,6 +14,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<SavingsGoal> SavingsGoals { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
+    public DbSet<Friend> Friends { get; set; }
+    public DbSet<PeerPaymentRequest> PeerPaymentRequests { get; set; }
+    public DbSet<FriendRequest> FriendRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -93,6 +96,70 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
+        });
+
+        modelBuilder.Entity<Friend>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Nickname).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.FriendUser)
+                .WithMany()
+                .HasForeignKey(e => e.FriendUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.UserId, e.FriendUserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<PeerPaymentRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasOne(e => e.RequesterUser)
+                .WithMany()
+                .HasForeignKey(e => e.RequesterUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.PayerUser)
+                .WithMany()
+                .HasForeignKey(e => e.PayerUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.TargetWallet)
+                .WithMany()
+                .HasForeignKey(e => e.TargetWalletId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.PayerUserId, e.Status });
+            entity.HasIndex(e => new { e.RequesterUserId, e.Status });
+        });
+
+        modelBuilder.Entity<FriendRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.RequestedNickname).HasMaxLength(100);
+
+            entity.HasOne(e => e.RequesterUser)
+                .WithMany()
+                .HasForeignKey(e => e.RequesterUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReceiverUser)
+                .WithMany()
+                .HasForeignKey(e => e.ReceiverUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.RequesterUserId, e.ReceiverUserId }).IsUnique();
+            entity.HasIndex(e => new { e.ReceiverUserId, e.Status });
+            entity.HasIndex(e => new { e.RequesterUserId, e.Status });
         });
     }
 }

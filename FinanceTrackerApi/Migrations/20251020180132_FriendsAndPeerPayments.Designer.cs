@@ -3,6 +3,7 @@ using System;
 using FinanceTrackerApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinanceTrackerApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251020180132_FriendsAndPeerPayments")]
+    partial class FriendsAndPeerPayments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,48 +85,6 @@ namespace FinanceTrackerApi.Migrations
                         .IsUnique();
 
                     b.ToTable("Friends");
-                });
-
-            modelBuilder.Entity("FinanceTrackerApi.Models.FriendRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("ReceiverUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RequestedNickname")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("RequesterUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReceiverUserId", "Status");
-
-                    b.HasIndex("RequesterUserId", "ReceiverUserId")
-                        .IsUnique();
-
-                    b.HasIndex("RequesterUserId", "Status");
-
-                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("FinanceTrackerApi.Models.PeerPaymentRequest", b =>
@@ -357,25 +318,6 @@ namespace FinanceTrackerApi.Migrations
                     b.Navigation("FriendUser");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FinanceTrackerApi.Models.FriendRequest", b =>
-                {
-                    b.HasOne("FinanceTrackerApi.Models.User", "ReceiverUser")
-                        .WithMany()
-                        .HasForeignKey("ReceiverUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FinanceTrackerApi.Models.User", "RequesterUser")
-                        .WithMany()
-                        .HasForeignKey("RequesterUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReceiverUser");
-
-                    b.Navigation("RequesterUser");
                 });
 
             modelBuilder.Entity("FinanceTrackerApi.Models.PeerPaymentRequest", b =>

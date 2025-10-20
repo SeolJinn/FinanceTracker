@@ -2,6 +2,7 @@ import { Wallet, TrendingUp, TrendingDown, DollarSign, PiggyBank, LogOut, Plus }
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
+import { AppMenuButtons } from "./AppMenuButtons"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useMemo } from "react"
@@ -268,20 +269,7 @@ export default function Dashboard() {
               <Plus className="h-4 w-4" />
               Add / Manage
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/wallets')}
-            >
-              Wallets
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/goals')}
-            >
-              Savings
-            </Button>
+            <AppMenuButtons />
             <div className="hidden md:flex items-center gap-2 ml-1">
               <div className="text-xs text-muted-foreground">Wallet:</div>
               <Select

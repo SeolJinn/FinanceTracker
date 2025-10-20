@@ -5,6 +5,8 @@ import RegisterPage from "@/components/RegisterPage"
 import Dashboard from "@/components/Dashboard"
 import WalletsPage from "@/components/WalletsPage"
 import SavingsGoalsPage from "./components/SavingsGoalsPage"
+import FriendsPage from "@/components/FriendsPage"
+import PeerPaymentsPage from "@/components/PeerPaymentsPage"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
@@ -29,6 +31,16 @@ export default function App() {
           <Route path="/goals" element={
             <ProtectedRoute>
               <SavingsGoalsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/friends" element={
+            <ProtectedRoute>
+              <FriendsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/peer-payments" element={
+            <ProtectedRoute>
+              <PeerPaymentsPage />
             </ProtectedRoute>
           } />
         </Routes>

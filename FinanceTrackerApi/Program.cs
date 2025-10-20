@@ -40,6 +40,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IFriendService, FriendService>();
+builder.Services.AddScoped<IPeerPaymentService, PeerPaymentService>();
 builder.Services.AddHttpClient<IFxRateService, FxRateService>();
 
 // Add CORS
