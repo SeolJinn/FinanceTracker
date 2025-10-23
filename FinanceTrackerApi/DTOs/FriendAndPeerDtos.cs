@@ -77,6 +77,7 @@ public class PeerPaymentRequestDto
 	public int PayerUserId { get; set; }
 	public int TargetWalletId { get; set; }
 	public decimal Amount { get; set; }
+    public string TargetWalletCurrencyCode { get; set; } = string.Empty;
 	public string? Note { get; set; }
 	public string Status { get; set; } = string.Empty;
 	public DateTime CreatedAt { get; set; }

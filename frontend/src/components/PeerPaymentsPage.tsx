@@ -284,7 +284,7 @@ export default function PeerPaymentsPage() {
                   <div key={r.id} className="py-3 flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="font-medium">Request #{r.id}</div>
-                      <div className="text-xs text-muted-foreground">Amount: {r.amount} · Status: {r.status}</div>
+                      <div className="text-xs text-muted-foreground">Amount: {r.amount} {r.targetWalletCurrencyCode || ''} · Status: {r.status}</div>
                       {r.note && <div className="text-xs text-muted-foreground">{r.note}</div>}
                       {incomingErrors[r.id] && (
                         <div className="text-xs text-red-600 mt-1">{incomingErrors[r.id]}</div>
@@ -327,7 +327,7 @@ export default function PeerPaymentsPage() {
                   <div key={r.id} className="py-3 flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="font-medium">Request #{r.id}</div>
-                      <div className="text-xs text-muted-foreground">Amount: {r.amount} · Status: {r.status}</div>
+                      <div className="text-xs text-muted-foreground">Amount: {r.amount} {r.targetWalletCurrencyCode || ''} · Status: {r.status}</div>
                       {r.note && <div className="text-xs text-muted-foreground">{r.note}</div>}
                     </div>
                     <Button variant="outline" onClick={() => onCancel(r.id)}>Cancel</Button>

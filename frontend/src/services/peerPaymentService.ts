@@ -6,6 +6,7 @@ export interface PeerPaymentRequestDto {
   payerUserId: number;
   targetWalletId: number;
   amount: number;
+  targetWalletCurrencyCode: string;
   note?: string;
   status: string;
   createdAt: string;

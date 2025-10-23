@@ -41,6 +41,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     date: transaction?.date ? transaction.date.split('T')[0] : new Date().toISOString().split('T')[0],
     note: transaction?.note || ''
   });
+  const [amountInput, setAmountInput] = useState<string>(transaction ? String(transaction.amount) : '');
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [wallets, setWallets] = useState<{ id: number; name: string; currencyCode: string }[]>([]);
@@ -78,8 +79,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.amount <= 0) {
+    const parsedAmount = parseFloat(amountInput);
+    if (!isFinite(parsedAmount) || parsedAmount <= 0) {
       setError('Amount must be greater than 0');
       return;
     }
@@ -94,7 +95,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
     
     setError('');
-    onSubmit(formData);
+    onSubmit({ ...formData, amount: parsedAmount });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -102,8 +103,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : 
-               name === 'type' ? parseInt(value) as TransactionType :
+      [name]: name === 'type' ? parseInt(value) as TransactionType :
                name === 'categoryId' ? parseInt(value) :
                name === 'walletId' ? parseInt(value) : value
     }));
@@ -169,8 +169,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <input
                 type="number"
                 name="amount"
-                value={formData.amount}
-                onChange={handleInputChange}
+                value={amountInput}
+                onChange={(e) => setAmountInput(e.target.value)}
                 step="0.01"
                 min="0.01"
                 className="w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition"

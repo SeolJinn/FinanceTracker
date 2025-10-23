@@ -121,7 +121,7 @@ public class PeerPaymentService : IPeerPaymentService
 			CategoryId = transferExpenseCategoryId,
 			WalletId = dto.FromWalletId,
 			Date = now,
-			Note = $"Peer transfer to user {request.RequesterUserId}",
+			Note = $"Peer transfer to {await GetDisplayNameAsync(payerUserId, request.RequesterUserId)}",
 			CreatedAt = now,
 			UpdatedAt = now
 		};
@@ -134,7 +134,7 @@ public class PeerPaymentService : IPeerPaymentService
 			CategoryId = transferIncomeCategoryId,
 			WalletId = request.TargetWalletId,
 			Date = now,
-			Note = $"Peer transfer from user {payerUserId}",
+			Note = $"Peer transfer from {await GetDisplayNameAsync(request.RequesterUserId, payerUserId)}",
 			CreatedAt = now,
 			UpdatedAt = now
 		};
@@ -225,7 +225,7 @@ public class PeerPaymentService : IPeerPaymentService
 			CategoryId = transferExpenseCategoryId,
 			WalletId = dto.FromWalletId,
 			Date = now,
-			Note = dto.Note ?? $"Peer transfer to user {dto.RecipientUserId}",
+			Note = dto.Note ?? $"Peer transfer to {await GetDisplayNameAsync(senderUserId, dto.RecipientUserId)}",
 			CreatedAt = now,
 			UpdatedAt = now
 		};
@@ -238,7 +238,7 @@ public class PeerPaymentService : IPeerPaymentService
 			CategoryId = transferIncomeCategoryId,
 			WalletId = dto.TargetWalletId,
 			Date = now,
-			Note = dto.Note ?? $"Peer transfer from user {senderUserId}",
+			Note = dto.Note ?? $"Peer transfer from {await GetDisplayNameAsync(dto.RecipientUserId, senderUserId)}",
 			CreatedAt = now,
 			UpdatedAt = now
 		};
@@ -248,20 +248,39 @@ public class PeerPaymentService : IPeerPaymentService
 		return true;
 	}
 
-	private static PeerPaymentRequestDto Map(PeerPaymentRequest r)
+    private PeerPaymentRequestDto Map(PeerPaymentRequest r)
+    {
+        var wallet = _context.Wallets.FirstOrDefault(w => w.Id == r.TargetWalletId);
+        return new PeerPaymentRequestDto
+        {
+            Id = r.Id,
+            RequesterUserId = r.RequesterUserId,
+            PayerUserId = r.PayerUserId,
+            TargetWalletId = r.TargetWalletId,
+            Amount = r.Amount,
+            TargetWalletCurrencyCode = wallet?.CurrencyCode ?? string.Empty,
+            Note = r.Note,
+            Status = r.Status.ToString(),
+            CreatedAt = r.CreatedAt,
+            UpdatedAt = r.UpdatedAt
+        };
+    }
+
+	private async Task<string> GetDisplayNameAsync(int viewerUserId, int otherUserId)
 	{
-		return new PeerPaymentRequestDto
+		var friend = await _context.Friends.FirstOrDefaultAsync(f => f.UserId == viewerUserId && f.FriendUserId == otherUserId);
+		if (friend != null && !string.IsNullOrWhiteSpace(friend.Nickname))
+			return friend.Nickname;
+
+		var other = await _context.Users.FindAsync(otherUserId);
+		if (other != null)
 		{
-			Id = r.Id,
-			RequesterUserId = r.RequesterUserId,
-			PayerUserId = r.PayerUserId,
-			TargetWalletId = r.TargetWalletId,
-			Amount = r.Amount,
-			Note = r.Note,
-			Status = r.Status.ToString(),
-			CreatedAt = r.CreatedAt,
-			UpdatedAt = r.UpdatedAt
-		};
+			var fullName = $"{other.FirstName} {other.LastName}".Trim();
+			if (!string.IsNullOrWhiteSpace(fullName)) return fullName;
+			if (!string.IsNullOrWhiteSpace(other.Email)) return other.Email;
+		}
+
+		return $"user {otherUserId}";
 	}
 }
 

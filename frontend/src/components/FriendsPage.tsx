@@ -15,6 +15,8 @@ export default function FriendsPage() {
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingFriendId, setEditingFriendId] = useState<number | null>(null)
+  const [editingNickname, setEditingNickname] = useState('')
 
   const load = async () => {
     try {
@@ -66,19 +68,30 @@ export default function FriendsPage() {
     }
   }
 
-  const onEditNickname = async (friendUserId: number) => {
-    const nn = prompt('Enter nickname')
-    if (!nn) return
+  const onEditNickname = (friendUserId: number, currentNickname: string) => {
+    setEditingFriendId(friendUserId)
+    setEditingNickname(currentNickname)
+  }
+
+  const onSaveNickname = async () => {
+    if (!editingFriendId) return
     try {
       setLoading(true)
       setError(null)
-      await friendService.updateNickname(friendUserId, { nickname: nn })
+      await friendService.updateNickname(editingFriendId, { nickname: editingNickname })
+      setEditingFriendId(null)
+      setEditingNickname('')
       await load()
     } catch (e: any) {
       setError(e?.message || 'Failed to update nickname')
     } finally {
       setLoading(false)
     }
+  }
+
+  const onCancelEdit = () => {
+    setEditingFriendId(null)
+    setEditingNickname('')
   }
 
   return (
@@ -117,7 +130,15 @@ export default function FriendsPage() {
                     <div className="font-medium truncate">{f.nickname}</div>
                     <div className="text-xs text-muted-foreground truncate">{f.displayName} · {f.email}</div>
                   </div>
-                  <Button variant="outline" onClick={() => onEditNickname(f.friendUserId)}>Nickname</Button>
+                  {editingFriendId === f.friendUserId ? (
+                    <div className="flex items-center gap-2">
+                      <Input className="w-[200px]" value={editingNickname} onChange={e => setEditingNickname(e.target.value)} />
+                      <Button onClick={onSaveNickname} disabled={loading || !editingNickname.trim()}>Save</Button>
+                      <Button variant="outline" onClick={onCancelEdit} disabled={loading}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" onClick={() => onEditNickname(f.friendUserId, f.nickname)}>Nickname</Button>
+                  )}
                   <Button variant="destructive" onClick={() => onRemove(f.friendUserId)}>Remove</Button>
                 </div>
               ))}
